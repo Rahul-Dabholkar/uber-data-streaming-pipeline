@@ -53,17 +53,19 @@ def send_to_event_hub(ride_data=None, batch_size=1):
 
 
 if __name__ == "__main__":
-    
-    print("=" * 80)
-    print("SINGLE RIDE CONFIRMATION")
-    print("=" * 80)
-    ride = generate_uber_ride_confirmation()
-    print(json.dumps(ride, indent=2))
 
-    
-    print("\n" + "=" * 80)
-    print("SENDING SINGLE RIDE TO EVENT HUB")
-    result = send_to_event_hub(ride)
-    print(f"Single ride sent to Event Hub: {result}")
-    
-    
+    import time
+
+    for i in range(10):
+        print("=" * 80)
+        print(f"RIDE CONFIRMATION {i + 1}")
+        print("=" * 80)
+        ride = generate_uber_ride_confirmation()
+        print(json.dumps(ride, indent=2))
+
+        print("\n" + "=" * 80)
+        print(f"SENDING RIDE {i + 1} TO EVENT HUB")
+        result = send_to_event_hub(ride)
+        print(f"Ride {i + 1} sent to Event Hub: {result}")
+
+        time.sleep(1)  # Sleep for 1 second between sending rides
