@@ -11,7 +11,6 @@ import os
 
 fake = Faker()
 
-
 VEHICLE_TYPE_MAPPING = [
     {'vehicle_type_id': 1, 'vehicle_type': 'UberX', 'description': 'Standard', 'base_rate': 2.50, 'per_mile': 1.75, 'per_minute': 0.35},
     {'vehicle_type_id': 2, 'vehicle_type': 'UberXL', 'description': 'Extra Large', 'base_rate': 3.50, 'per_mile': 2.25, 'per_minute': 0.45},
@@ -79,10 +78,53 @@ CANCELLATION_REASON_MAPPING = [
 
 CANCELLATION_REASON_ID_MAP = {c['cancellation_reason']: c['cancellation_reason_id'] for c in CANCELLATION_REASON_MAPPING}
 
+# --- STATIC POOLS FOR DYNAMIC SCD TYPE 2 UPDATE SIMULATIONS ---
+NUM_DRIVERS = 20
+NUM_PASSENGERS = 50
+
+# Seed driver details (ratings, license, names remain stable; ratings/phones update)
+DRIVER_POOL = [
+    {
+        'driver_id': str(uuid.uuid4()),
+        'driver_name': fake.name(),
+        'driver_rating': round(random.uniform(4.2, 5.0), 2),
+        'driver_phone': fake.phone_number(),
+        'driver_license': fake.bothify('??-???-#######')
+    }
+    for _ in range(NUM_DRIVERS)
+]
+
+# Seed passenger details (contact info will update)
+PASSENGER_POOL = [
+    {
+        'passenger_id': str(uuid.uuid4()),
+        'passenger_name': fake.name(),
+        'passenger_email': fake.email(),
+        'passenger_phone': fake.phone_number()
+    }
+    for _ in range(NUM_PASSENGERS)
+]
 
 
 def generate_uber_ride_confirmation():
+    # Pick a random driver and passenger from the pools to simulate recurring users
+    driver = random.choice(DRIVER_POOL)
+    passenger = random.choice(PASSENGER_POOL)
     
+    # 15% chance of driver rating changing (forces SCD Type 2 history update in Gold)
+    if random.random() < 0.15:
+        driver['driver_rating'] = round(random.uniform(4.0, 5.0), 2)
+        
+    # 10% chance of driver phone changing
+    if random.random() < 0.10:
+        driver['driver_phone'] = fake.phone_number()
+        
+    # 10% chance of passenger phone or email changing (forces SCD Type 2 history update in Gold)
+    if random.random() < 0.10:
+        passenger['passenger_phone'] = fake.phone_number()
+    if random.random() < 0.10:
+        passenger['passenger_email'] = fake.email()
+
     # Generate timestamps
     pickup_time = datetime.now() - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23))
     duration_minutes = random.randint(5, 120)
@@ -143,8 +185,8 @@ def generate_uber_ride_confirmation():
         # Keys/Identifiers
         'ride_id': str(uuid.uuid4()),
         'confirmation_number': fake.bothify('??#-####-??##'),
-        'passenger_id': str(uuid.uuid4()),
-        'driver_id': str(uuid.uuid4()),
+        'passenger_id': passenger['passenger_id'],
+        'driver_id': driver['driver_id'],
         'vehicle_id': str(uuid.uuid4()),
         'pickup_location_id': str(uuid.uuid4()),
         'dropoff_location_id': str(uuid.uuid4()),
@@ -159,15 +201,15 @@ def generate_uber_ride_confirmation():
         'cancellation_reason_id': cancellation_reason_id,
         
         # Passenger Information
-        'passenger_name': fake.name(),
-        'passenger_email': fake.email(),
-        'passenger_phone': fake.phone_number(),
+        'passenger_name': passenger['passenger_name'],
+        'passenger_email': passenger['passenger_email'],
+        'passenger_phone': passenger['passenger_phone'],
         
         # Driver Information
-        'driver_name': fake.name(),
-        'driver_rating': round(random.uniform(4.0, 5.0), 2),
-        'driver_phone': fake.phone_number(),
-        'driver_license': fake.bothify('??-???-#######'),
+        'driver_name': driver['driver_name'],
+        'driver_rating': driver['driver_rating'],
+        'driver_phone': driver['driver_phone'],
+        'driver_license': driver['driver_license'],
         
         # Vehicle Information
         'vehicle_model': fake.word().capitalize(),
