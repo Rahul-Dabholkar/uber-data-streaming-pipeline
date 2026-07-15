@@ -1,7 +1,7 @@
 [
   {
     "city_id": 1,
-    "city": "Super New York",
+    "city": "New York",
     "state": "NY",
     "region": "Northeast",
     "updated_at": "2026-07-11T00:00:00.000+00:00"
